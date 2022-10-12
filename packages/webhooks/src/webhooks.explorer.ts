@@ -1,9 +1,15 @@
+import { SHOPIFY_API_CONTEXT } from '@nestjs-shopify/core';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { ContextIdFactory, DiscoveryService } from '@nestjs/core';
+import {
+  ApplicationConfig,
+  ContextIdFactory,
+  DiscoveryService,
+} from '@nestjs/core';
 import { Injector } from '@nestjs/core/injector/injector';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Module } from '@nestjs/core/injector/module';
-import Shopify from '@shopify/shopify-api';
+import { Shopify } from '@shopify/shopify-api';
+import { addLeadingSlash } from './utils/add-leading-slash.util';
 import { ShopifyWebhooksMetadataAccessor } from './webhooks-metadata.accessor';
 import {
   SHOPIFY_WEBHOOKS_DEFAULT_PATH,
@@ -20,8 +26,11 @@ export class ShopifyWebhooksExplorer implements OnModuleInit {
   private readonly injector = new Injector();
 
   constructor(
+    @Inject(SHOPIFY_API_CONTEXT)
+    private readonly shopifyApi: Shopify,
     @Inject(SHOPIFY_WEBHOOKS_OPTIONS)
     private readonly options: ShopifyWebhooksOptions,
+    private readonly appConfig: ApplicationConfig,
     private readonly discoveryService: DiscoveryService,
     private readonly metadataAccessor: ShopifyWebhooksMetadataAccessor
   ) {}
@@ -68,8 +77,17 @@ export class ShopifyWebhooksExplorer implements OnModuleInit {
         isRequestScoped
       );
 
-      Shopify.Webhooks.Registry.addHandler(topic, {
-        path: this.options.path || SHOPIFY_WEBHOOKS_DEFAULT_PATH,
+      const globalPrefix = this.appConfig.getGlobalPrefix();
+      const webhookPath = [
+        globalPrefix,
+        this.options.path || SHOPIFY_WEBHOOKS_DEFAULT_PATH,
+      ]
+        .join('/')
+        .replace('//', '/');
+
+      this.shopifyApi.webhooks.addHandler({
+        path: addLeadingSlash(webhookPath),
+        topic,
         webhookHandler,
       });
     });

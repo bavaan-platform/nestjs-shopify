@@ -9,6 +9,7 @@ export enum AccessMode {
 
 export interface ShopifyAuthModuleOptions {
   basePath?: string;
+  returnHeaders?: boolean;
   useGlobalPrefix?: boolean;
   afterAuthHandler?: ShopifyAuthAfterHandler;
 }
@@ -18,6 +19,10 @@ export interface ShopifyAuthOptionsFactory {
     | Promise<ShopifyAuthModuleOptions>
     | ShopifyAuthModuleOptions;
 }
+
+export type ShopifySessionRequest<T> = T & {
+  shopifySession?: SessionInterface | undefined;
+};
 
 export interface ShopifyAuthAfterHandler<
   T extends IncomingMessage = IncomingMessage,
